@@ -1,0 +1,11 @@
+[package]
+name = "Inventorus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+geekorm = { version = "0.10", features = ["all", "hash", "libsql", "helpers"] }
+libsql = "0.6.0"
+rand = "0.9"
+serde = "1.0.217"
+tokio = { version = "1", features = ["full"] }
