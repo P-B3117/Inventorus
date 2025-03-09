@@ -1,4 +1,10 @@
-use geekorm::prelude::*;
+use axum::{
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+    extract::State,
+};
+use geekorm::{prelude::*, Database};
 use libsql::{Builder, Connection, OpenFlags};
 use rand::Rng;
 use serde;
@@ -6,10 +12,16 @@ use std::{
     cmp::Ordering,
     env, io,
     path::{self, PathBuf},
+    cell::RefCell
 };
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+
 
 const DEBUG: bool = true;
-const FILE: bool = false;
+const FILE: bool = true;
+
 
 /// Using the `Table` derive macro to generate the `Users` table
 #[derive(Table, Debug, Default, serde::Serialize, serde::Deserialize)]
@@ -24,12 +36,18 @@ pub struct Users {
     password: String,
 }
 
+
+#[derive(Clone)]
+struct AppState {
+    connection: libsql::Connection,
+}
+
 #[tokio::main]
 async fn main() {
-    let db;
+    let db: libsql::Database;
     let handle = tokio::runtime::Handle::current();
 
-    if FILE {
+    if !FILE {
         // Initialize an in-memory database
         db = libsql::Builder::new_local(":memory:")
             .build()
@@ -37,13 +55,13 @@ async fn main() {
             .expect(&format!("failed to create new database in memory"));
     } else {
         // // Initialize a database in a file
-        let mut path: PathBuf = [
+        let path: PathBuf = [
             env::current_dir().expect("Couldn't get current dir"),
             PathBuf::from("test.sqlite"),
         ]
         .iter()
         .collect();
-        db = libsql::Builder::new_local(path)
+       db = libsql::Builder::new_local(path)
             .build()
             .await
             .expect(&format!("failed to create new database in file"));
@@ -65,23 +83,35 @@ async fn main() {
     password.push_str("Password");
     get_info(&mut password);
 
-    let task1 = handle.spawn(add_user(username, password, conn));
-    //add_user(username, password);
+    // let task1 = handle.spawn(add_user(username, password, &conn));
+    // add_user(username, password);
 
-    println!("Welcome to the guessing game!");
+    // build our application with a route
+    let app = Router::new()
+        // `GET /` goes to `root`
+        .route("/", get(root))
+        // `POST /users` goes to `create_user`
+        .route("/users", post(create_user)
+        .with_state(AppState {
+            connection: conn,
+        })
+    );
 
-    game();
-
-    println!("Was nice seeing you");
+    // run our app with hyper
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+        .await
+        .unwrap();
+    println!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 }
 
-async fn add_user(username: String, password: String, conn: Connection) {
+async fn add_user(username: String, password: String, conn: &Connection) {
     if DEBUG {
         println!("Creating new user");
     }
 
     let mut user: Users;
-    let req = Users::fetch_by_username(&conn, &username).await;
+    let req = Users::fetch_by_username(conn, &username).await;
 
     if req.is_ok() {
         if DEBUG {
@@ -102,7 +132,7 @@ async fn add_user(username: String, password: String, conn: Connection) {
         if DEBUG {
             println!("User: {} has been created", &username);
         }
-        user.save(&conn).await.expect("couldn't save the user");
+        user.save(conn).await.expect("couldn't save the user");
         if DEBUG {
             println!("User: {} has been saved", username)
         }
@@ -115,42 +145,42 @@ fn get_info(info: &mut String) {
     io::stdin().read_line(info).expect("failed to read line");
 }
 
-fn game() {
-    println!("\nPlease tell us the number you are guessing\n");
-    let mut secret: u32;
+// basic handler that responds with a static string
+async fn root() -> &'static str {
+    "Hello, World!"
+}
 
-    loop {
-        secret = rand::rng().random_range(1..=100);
-        println!("The secret number is: {secret}");
+async fn create_user(
+    // this argument tells axum to parse the request body
+    // as JSON into a `CreateUser` type
+    State(state): State<AppState>, Json(payload): Json<CreateUser>, 
+) -> (StatusCode, Json<User>) {
+    println!("inserting user");
+    // insert your application logic here
+    add_user(payload.username, payload.password, &state.connection).await;
+    
+    let user = User {
+        id: 1,
+        username: String::from("lol"),
+    };
 
-        let mut guess = String::new();
-        io::stdin()
-            .read_line(&mut guess)
-            .expect("failed to read line");
+    // this will be converted into a JSON response
+    // with a status code of `201 Created`
+    (StatusCode::CREATED, Json(user))
+}
 
-        let guess: u32 = guess.trim().parse().expect("Please type a number!");
 
-        println!("You guessed: {}", guess);
 
-        match guess.cmp(&secret) {
-            Ordering::Less => {
-                println!("You guessed too small");
-                break;
-            }
-            Ordering::Greater => {
-                println!("You guessed too big");
-                break;
-            }
-            Ordering::Equal => println!("You guessed right"),
-        }
-    }
+// the input to our `create_user` handler
+#[derive(serde::Deserialize)]
+struct CreateUser {
+    username: String,
+    password: String,
+}
 
-    let mut guess = String::new();
-    println!("Do you want to play again? (y/n): ");
-    io::stdin()
-        .read_line(&mut guess)
-        .expect("Couldn't read answer");
-    if guess.trim() == "y" {
-        game();
-    }
+// the output to our `create_user` handler
+#[derive(serde::Serialize)]
+struct User {
+    id: u64,
+    username: String,
 }
