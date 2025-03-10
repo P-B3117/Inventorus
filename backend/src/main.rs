@@ -1,31 +1,28 @@
 use axum::{
+    extract::State,
     http::StatusCode,
     routing::{get, post},
     Json, Router,
-    extract::State,
 };
-use geekorm::{prelude::*, Database};
+use geekorm::{prelude::*, Database, GEEKORM_BANNER, GEEKORM_VERSION};
 use libsql::{Builder, Connection, OpenFlags};
 use rand::Rng;
 use serde;
+use std::sync::Arc;
 use std::{
+    cell::RefCell,
     cmp::Ordering,
     env, io,
     path::{self, PathBuf},
-    cell::RefCell
 };
-use std::sync::Arc;
 use tokio::sync::Mutex;
-
-
 
 const DEBUG: bool = true;
 const FILE: bool = true;
 
-
 /// Using the `Table` derive macro to generate the `Users` table
-#[derive(Table, Debug, Default, serde::Serialize, serde::Deserialize)]
-pub struct Users {
+#[derive(Table, Default, serde::Serialize, serde::Deserialize)]
+struct Users {
     #[geekorm(primary_key, auto_increment)]
     id: PrimaryKeyInteger,
     /// Unique username field
@@ -34,8 +31,9 @@ pub struct Users {
     /// Password field with automatic hashing
     #[geekorm(hash)]
     password: String,
+    // Status to handle permission level
+    status: i32,
 }
-
 
 #[derive(Clone)]
 struct AppState {
@@ -44,9 +42,14 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    println!("{}     v{}\n", GEEKORM_BANNER, GEEKORM_VERSION);
+
+    println!("creating database");
     let db: libsql::Database;
+    println!("creating tokio handle");
     let handle = tokio::runtime::Handle::current();
 
+    println!("initializing database");
     if !FILE {
         // Initialize an in-memory database
         db = libsql::Builder::new_local(":memory:")
@@ -61,43 +64,35 @@ async fn main() {
         ]
         .iter()
         .collect();
-       db = libsql::Builder::new_local(path)
+        db = libsql::Builder::new_local(path)
             .build()
             .await
             .expect(&format!("failed to create new database in file"));
     }
 
+    println!("connecting to database");
     let conn = db
         .connect()
         .expect(&format!("failed to connect to new database in memory"));
 
+    println!("creating tables");
     Users::create_table(&conn)
         .await
         .expect("couldn't create user table");
 
-    let mut username = String::new();
-    username.push_str("Username");
-    get_info(&mut username);
-
-    let mut password = String::new(); // TODO would need to only store the hash or wtv... but technically hashed by the frontend right?
-    password.push_str("Password");
-    get_info(&mut password);
-
-    // let task1 = handle.spawn(add_user(username, password, &conn));
-    // add_user(username, password);
-
+    println!("creating router");
     // build our application with a route
     let app = Router::new()
         // `GET /` goes to `root`
         .route("/", get(root))
         // `POST /users` goes to `create_user`
-        .route("/users", post(create_user)
-        .with_state(AppState {
-            connection: conn,
-        })
-    );
+        .route(
+            "/user",
+            post(create_user).with_state(AppState { connection: conn }),
+        );
 
     // run our app with hyper
+    println!("creating listener");
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
@@ -105,7 +100,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn add_user(username: String, password: String, conn: &Connection) {
+async fn add_user(username: String, password: String, status: i32, conn: &Connection) {
     if DEBUG {
         println!("Creating new user");
     }
@@ -128,7 +123,7 @@ async fn add_user(username: String, password: String, conn: &Connection) {
             }
         }
     } else {
-        user = Users::new(&username, &password);
+        user = Users::new(&username, &password, status);
         if DEBUG {
             println!("User: {} has been created", &username);
         }
@@ -153,34 +148,28 @@ async fn root() -> &'static str {
 async fn create_user(
     // this argument tells axum to parse the request body
     // as JSON into a `CreateUser` type
-    State(state): State<AppState>, Json(payload): Json<CreateUser>, 
-) -> (StatusCode, Json<User>) {
+    State(state): State<AppState>,
+    Json(payload): Json<CreateUser>,
+) -> StatusCode {
     println!("inserting user");
     // insert your application logic here
-    add_user(payload.username, payload.password, &state.connection).await;
-    
-    let user = User {
-        id: 1,
-        username: String::from("lol"),
-    };
+    add_user(
+        payload.username,
+        payload.password,
+        payload.status,
+        &state.connection,
+    )
+    .await;
 
     // this will be converted into a JSON response
     // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
+    StatusCode::CREATED
 }
-
-
 
 // the input to our `create_user` handler
 #[derive(serde::Deserialize)]
 struct CreateUser {
     username: String,
     password: String,
-}
-
-// the output to our `create_user` handler
-#[derive(serde::Serialize)]
-struct User {
-    id: u64,
-    username: String,
+    status: i32,
 }
