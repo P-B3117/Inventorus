@@ -4,36 +4,19 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use geekorm::{prelude::*, Database, GEEKORM_BANNER, GEEKORM_VERSION};
-use libsql::{Builder, Connection, OpenFlags};
+use geekorm::{prelude::*, GEEKORM_BANNER, GEEKORM_VERSION};
+use libsql::{Connection};
 use rand::Rng;
 use serde;
-use std::sync::Arc;
 use std::{
-    cell::RefCell,
-    cmp::Ordering,
     env, io,
     path::{self, PathBuf},
 };
 use tokio::sync::Mutex;
+mod tables;
 
 const DEBUG: bool = true;
 const FILE: bool = true;
-
-/// Using the `Table` derive macro to generate the `Users` table
-#[derive(Table, Default, serde::Serialize, serde::Deserialize)]
-struct Users {
-    #[geekorm(primary_key, auto_increment)]
-    id: PrimaryKeyInteger,
-    /// Unique username field
-    #[geekorm(unique)]
-    username: String,
-    /// Password field with automatic hashing
-    #[geekorm(hash)]
-    password: String,
-    // Status to handle permission level
-    status: i32,
-}
 
 #[derive(Clone)]
 struct AppState {
@@ -76,7 +59,7 @@ async fn main() {
         .expect(&format!("failed to connect to new database in memory"));
 
     println!("creating tables");
-    Users::create_table(&conn)
+    tables::Users::create_table(&conn)
         .await
         .expect("couldn't create user table");
 
@@ -85,7 +68,7 @@ async fn main() {
     let app = Router::new()
         // `GET /` goes to `root`
         .route("/", get(root))
-        // `POST /users` goes to `create_user`
+        // `POST /tables::Users` goes to `create_user`
         .route(
             "/user",
             post(create_user).with_state(AppState { connection: conn }),
@@ -105,8 +88,8 @@ async fn add_user(username: String, password: String, status: i32, conn: &Connec
         println!("Creating new user");
     }
 
-    let mut user: Users;
-    let req = Users::fetch_by_username(conn, &username).await;
+    let mut user: tables::Users;
+    let req = tables::Users::fetch_by_username(conn, &username).await;
 
     if req.is_ok() {
         if DEBUG {
@@ -123,7 +106,7 @@ async fn add_user(username: String, password: String, status: i32, conn: &Connec
             }
         }
     } else {
-        user = Users::new(&username, &password, status);
+        user = tables::Users::new(&username, &password, status);
         if DEBUG {
             println!("User: {} has been created", &username);
         }
