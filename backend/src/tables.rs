@@ -28,4 +28,5 @@ pub struct Components {
     vendor: String,
     description: String,
     vendor_part_number: String,
+    price: i32,
 }

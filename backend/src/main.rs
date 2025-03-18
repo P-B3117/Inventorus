@@ -5,7 +5,7 @@ use axum::{
     Json, Router,
 };
 use geekorm::{prelude::*, GEEKORM_BANNER, GEEKORM_VERSION};
-use libsql::{Connection};
+use libsql::Connection;
 use rand::Rng;
 use serde;
 use std::{
@@ -62,6 +62,10 @@ async fn main() {
     tables::Users::create_table(&conn)
         .await
         .expect("couldn't create user table");
+
+    tables::Components::create_table(&conn)
+        .await
+        .expect("couldn't create components table");
 
     println!("creating router");
     // build our application with a route
