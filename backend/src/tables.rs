@@ -20,13 +20,18 @@ pub struct Users {
 pub struct Components {
     #[geekorm(primary_key, auto_increment)]
     id: PrimaryKeyInteger,
+<<<<<<< HEAD
     type_id: i32,
+=======
+    type: String,
+>>>>>>> 3b0926d (update openapi)
     value: String,
     quantity: u64,
     footprint: String,
     vendor_id: i32, // manual foreign key cos not supported by geekorm
     description: String,
     vendor_part_number: String,
+<<<<<<< HEAD
     price: i32,
 }
 
@@ -47,4 +52,6 @@ pub struct Types {
     id: PrimaryKeyInteger,
     name: String, // indexed cos always queried by name
     description: String,
+=======
+>>>>>>> 3b0926d (update openapi)
 }
