@@ -21,7 +21,7 @@ pub struct Users {
 pub struct Components {
     #[geekorm(primary_key, auto_increment)]
     id: PrimaryKeyInteger,
-    symbol_name: String,
+    type: String,
     value: String,
     quantity: u64,
     footprint: String,
