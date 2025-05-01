@@ -30,7 +30,7 @@ pub struct Components {
     price: i32,
 }
 
-/// Using the `Table` derive macro to generate the `Components` table>>>>>>> 3b0926d (update openapi)
+/// Using the `Table` derive macro to generate the `Components` table
 #[derive(Table, Default, serde::Serialize, serde::Deserialize)]
 pub struct Vendors {
     #[geekorm(primary_key, auto_increment)]

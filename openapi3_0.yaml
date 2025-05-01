@@ -16,6 +16,8 @@ externalDocs:
 tags:
   - name: user
     description: Operations about user
+  - name: components
+    description: Components that make up the inventory
 paths:
   /user:
     post:
@@ -174,86 +176,149 @@ paths:
           description: Invalid username supplied
         '404':
           description: User not found
+
+  /components:
+    post:
+      tags:
+        - components
+      summary: add component
+      description: Add the component precised in the body of the request 
+      operationId: createComponent
+      requestBody:
+        description: created component
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Component'
+
+  /components/vendor/{vendor}:
+    get:
+      tags:
+        - components
+      summary: "fetch components from vendor"
+      description: "Fetch all components from the vendor specified in the url"
+      operationId: getComponentsByVendor
+      parameters:
+        - name: vendor
+          in: path
+          description: 'The vendor name that all the components fetched must have in common'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentArray' 
+        '400':
+          description: Invalid vendor name supplied
+        '404':
+          description: Vendor not found
+
+  /components/type/{type}:
+    get:
+      tags:
+        - components
+      summary: "fetch components from vendor"
+      description: "Fetch all components from the vendor specified in the url"
+      operationId: getComponentsByType
+      parameters:
+        - name: type
+          in: path
+          description: 'The type that all the components fetched must have in common'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentArray' 
+        '400':
+          description: Invalid type name supplied
+        '404':
+          description: Type not found
+
+  /components/all:
+    get:
+      tags:
+        - components
+      summary: "fetch components from vendor"
+      description: "Fetch all components from the vendor specified in the url"
+      operationId: getAllComponents
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentArray' 
+        '404':
+          description: Components not found
+
+  /vendor:
+    get:
+      tags:
+        - components
+      summary: "fetch components from vendor"
+      description: "Fetch all components from the vendor specified in the url"
+      operationId: getAllComponents
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentArray' 
+        '404':
+          description: Components not found
+
+
 components:
   schemas:
-    Order:
+
+    Component:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-          example: 10
-        petId:
-          type: integer
-          format: int64
-          example: 198772
+        type:
+          type: string
+          example: "Capacitor"
+        value:
+          type: string
+          example: "110nf"
         quantity:
           type: integer
-          format: int32
-          example: 7
-        shipDate:
+          format: uint64
+          example: "10"
+        footprint:
+          description: the footprint given by the vendor
           type: string
-          format: date-time
-        status:
+          example: Resistor_SMD:R_0805_2012Metric
+        vendor:
           type: string
-          description: Order Status
-          example: approved
-          enum:
-            - placed
-            - approved
-            - delivered
-        complete:
-          type: boolean
-      xml:
-        name: order
-    Customer:
-      type: object
-      properties:
-        id:
+          example: "Digikey"
+        description:
+          type: string
+          example: "A shiny capacitor"
+        vendor_part_number:
+          type: string
+          example: "490-6473-1-ND"
+        price:
           type: integer
-          format: int64
-          example: 100000
-        username:
-          type: string
-          example: fehguy
-        address:
-          type: array
-          xml:
-            name: addresses
-            wrapped: true
-          items:
-            $ref: '#/components/schemas/Address'
-      xml:
-        name: customer
-    Address:
-      type: object
-      properties:
-        street:
-          type: string
-          example: 437 Lytton
-        city:
-          type: string
-          example: Palo Alto
-        state:
-          type: string
-          example: CA
-        zip:
-          type: string
-          example: '94301'
-      xml:
-        name: address
-    Category:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-        name:
-          type: string
-          example: Dogs
-      xml:
-        name: category
+          example: "23"
+          description: The price in cents
+
+
+    ComponentArray:
+      type: array
+      description: A list of components objects
+      items:
+        $ref: '#/components/schemas/Component'
+      
     User:
       type: object
       properties:
@@ -276,13 +341,11 @@ components:
         name: user
 
     UserArray:
-      description: List of user object
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/User'
+      type: array
+      description: A list of user objects
+      items:
+        $ref: '#/components/schemas/User'
+
   securitySchemes:
     petstore_auth:
       type: oauth2

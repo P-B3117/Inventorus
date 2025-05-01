@@ -5,7 +5,7 @@ use axum::{
     Json, Router,
 };
 use geekorm::{prelude::*, GEEKORM_BANNER, GEEKORM_VERSION};
-use libsql::{Connection};
+use libsql::Connection;
 use rand::Rng;
 use serde;
 use std::{
@@ -56,12 +56,27 @@ async fn main() {
     println!("connecting to database");
     let conn = db
         .connect()
-        .expect(&format!("failed to connect to new database in memory"));
+        .expect(&format!("failed to connect to the database"));
 
     println!("creating tables");
     tables::Users::create_table(&conn)
         .await
         .expect("couldn't create user table");
+
+    tables::Components::create_table(&conn)
+        .await
+        .expect("couldn't create components table");
+
+    tables::Vendors::create_table(&conn)
+        .await
+        .expect_err("Couldn't create Vendors table");
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_vendor_name ON vendors (name);",
+        (),
+    )
+    .await
+    .expect("Couldn't create name index on vendors");
 
     println!("creating router");
     // build our application with a route
