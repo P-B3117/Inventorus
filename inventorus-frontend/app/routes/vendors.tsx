@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import {
   Container,
   Typography,
@@ -38,6 +39,7 @@ export function meta() {
 }
 
 export default function Vendors() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [sortBy, setSortBy] = useState<keyof Vendor>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -52,6 +54,13 @@ export default function Vendors() {
 
   useEffect(() => {
     vendors.execute();
+    
+    // Check if we should open the form from navigation state
+    if (location.state?.openForm) {
+      setOpen(true);
+      // Clear the state to prevent reopening on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

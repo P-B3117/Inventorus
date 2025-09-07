@@ -1,6 +1,6 @@
 import type { Route } from "./+types/home";
 import { useEffect } from "react";
-import { Link } from "react-router";
+import { useNavigate, Link } from "react-router";
 import {
   Box,
   Container,
@@ -31,6 +31,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
   const components = useApi<Component[]>(() => componentService.getAllComponents(), []);
   const vendors = useApi<Vendor[]>(() => vendorService.getAllVendors(), []);
   const types = useApi<Type[]>(() => typeService.getAllTypes(), []);
@@ -270,37 +271,36 @@ export default function Home() {
                 description: "Add new electronic components",
                 icon: <BuildIcon />,
                 color: "primary",
-                link: "/components",
+                action: () => navigate('/components', { state: { openForm: true } }),
               },
               {
                 title: "Add Vendor",
                 description: "Register new suppliers",
                 icon: <StoreIcon />,
                 color: "success",
-                link: "/vendors",
+                action: () => navigate('/vendors', { state: { openForm: true } }),
               },
               {
                 title: "Add Type",
                 description: "Create component categories",
                 icon: <CategoryIcon />,
                 color: "secondary",
-                link: "/types",
+                action: () => navigate('/types', { state: { openForm: true } }),
               },
             ].map((action) => (
               <Card
                 key={action.title}
-                component={Link}
-                to={action.link}
                 variant="outlined"
                 sx={{
                   flex: 1,
-                  textDecoration: 'none',
+                  cursor: 'pointer',
                   transition: 'all 0.2s',
                   '&:hover': {
                     boxShadow: 2,
                     transform: 'translateY(-1px)',
                   },
                 }}
+                onClick={action.action}
               >
                 <CardContent>
                   <Stack direction="row" alignItems="center" spacing={2}>

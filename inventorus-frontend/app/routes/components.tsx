@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import {
   Container,
   Typography,
@@ -39,6 +40,7 @@ export function meta() {
 }
 
 export default function Components() {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [priceInput, setPriceInput] = useState('0.00'); // Separate state for price input
   const [sortBy, setSortBy] = useState<keyof Component>('description');
@@ -64,6 +66,14 @@ export default function Components() {
     components.execute();
     vendors.execute();
     types.execute();
+    
+    // Check if we should open the form from navigation state
+    if (location.state?.openForm) {
+      setOpen(true);
+      setPriceInput('0.00');
+      // Clear the state to prevent reopening on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
