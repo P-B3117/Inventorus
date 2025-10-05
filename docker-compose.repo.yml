@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: inventorus-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_data:/app/data
+    networks:
+      - inventorus-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./inventorus-frontend
+      dockerfile: Dockerfile
+    container_name: inventorus-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - INVENTORUS_API_ADDRESS=http://localhost:8080
+      - NODE_ENV=production
+    networks:
+      - inventorus-network
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:
+    name: inventorus_backend_data
+
+networks:
+  inventorus-network:
+    driver: bridge

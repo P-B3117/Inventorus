@@ -23,3 +23,7 @@ Cargo.lock
 # Added by cargo
 
 /target
+
+*cache
+backend/data
+backend/zig-out

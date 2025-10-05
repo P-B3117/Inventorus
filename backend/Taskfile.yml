@@ -1,0 +1,38 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  clean:
+    cmds:
+      - rm -rf .zig-cache
+      - rm -rf zig-out
+    silent: true
+
+  test:
+    cmds:
+      - zig build run
+    silent: true
+
+  release:
+    cmds:
+      - zig build -Doptimize=ReleaseFast run
+    silent: true
+
+  release-windows:
+    cmds:
+      - zig build -Doptimize=ReleaseFast -Dtarget=x86_64-windows
+    silent: true
+
+  clean-db:
+    cmds:
+      - rm -rf inventorusDb.sqlite
+    silent: true
+
+  add-component:
+    cmds:
+      - 'curl -X POST -H "Content-Type: application/json" -d {"id":1234567890,"type_id":1,"value":"22kΩ","quantity":250,"footprint":"0805","vendor_id":2,"description":"Surface mount resistor 22kΩ ±5% for testing","vendor_part_number":"RC0805JR-0722KL","price":"0.03"} http://localhost:8080/components/add'
+    silent: false

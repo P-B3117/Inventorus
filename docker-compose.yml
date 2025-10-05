@@ -1,0 +1,29 @@
+services:
+  backend:
+    container_name: inventorus-backend
+    # Ports only needed for debug because the frontend is linked to the backend container via the inventorus-network network
+    # ports:
+    # - "8080:8080"
+    volumes:
+      - ./backend_data:/app/data # volume as a bind mount is easier to manage and debug. Also better portability if you change environment.
+    networks:
+      - inventorus-network
+    restart: unless-stopped
+
+  frontend:
+    container_name: inventorus-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - INVENTORUS_API_ADDRESS=http://backend:8080
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - inventorus-network
+    restart: unless-stopped
+
+networks:
+  inventorus-network:
+    driver: bridge

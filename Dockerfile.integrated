@@ -1,0 +1,226 @@
+# Integrated Dockerfile that builds both frontend and backend
+# This creates a single container with the backend serving the frontend
+
+# Stage 1: Build the frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY inventorus-frontend/package.json inventorus-frontend/package-lock.json ./
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source code
+COPY inventorus-frontend/ ./
+
+# Build the frontend
+RUN npm run build
+
+# Stage 2: Build the backend
+FROM alpine:3.18 AS backend-builder
+
+# Install Zig and build dependencies
+RUN apk add --no-cache \
+    curl \
+    tar \
+    xz \
+    musl-dev \
+    gcc
+
+# Download and install Zig 0.14.1
+RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz -o zig.tar.xz && \
+    tar -xf zig.tar.xz && \
+    mv zig-x86_64-linux-0.14.1 /usr/local/zig && \
+    ln -s /usr/local/zig/zig /usr/local/bin/zig
+
+WORKDIR /app/backend
+
+# Copy backend source
+COPY backend/build.zig backend/build.zig.zon ./
+COPY backend/src ./src
+
+# Build the backend
+RUN zig build -Doptimize=ReleaseFast
+
+# Stage 3: Production runtime
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache sqlite
+
+# Create app user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G appgroup appuser
+
+WORKDIR /app
+
+# Copy backend executable
+COPY --from=backend-builder /app/backend/zig-out/bin/zig_api_test ./zig_api_test
+
+# Copy frontend build assets
+COPY --from=frontend-builder /app/frontend/build ./frontend
+
+# Create updated index.html that serves as the main app entry point
+RUN mkdir -p /app/src/html && \
+    cat > /app/src/html/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inventorus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        // Simple frontend application
+        (function() {
+            const root = document.getElementById('root');
+
+            // Set up the basic layout
+            root.innerHTML = `
+                <div style="font-family: Inter, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto;">
+                    <header style="border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px;">
+                        <h1 style="color: #333; margin: 0;">Inventorus</h1>
+                        <p style="color: #666; margin: 5px 0 0 0;">Component Inventory Management System</p>
+                    </header>
+
+                    <nav style="margin-bottom: 30px;">
+                        <button onclick="showComponents()" style="margin-right: 10px; padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">Components</button>
+                        <button onclick="showVendors()" style="margin-right: 10px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Vendors</button>
+                        <button onclick="showTypes()" style="margin-right: 10px; padding: 10px 20px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Types</button>
+                        <button onclick="testApi()" style="padding: 10px 20px; background: #9C27B0; color: white; border: none; border-radius: 4px; cursor: pointer;">Test API</button>
+                    </nav>
+
+                    <main id="content" style="background: #f9f9f9; padding: 20px; border-radius: 8px; min-height: 400px;">
+                        <h2>Welcome to Inventorus</h2>
+                        <p>Select a section from the navigation above to get started.</p>
+
+                        <div style="margin-top: 20px;">
+                            <h3>Available API Endpoints:</h3>
+                            <ul>
+                                <li><code>GET /api/components/</code> - List all components</li>
+                                <li><code>GET /api/vendors/</code> - List all vendors</li>
+                                <li><code>GET /api/types/</code> - List all types</li>
+                                <li><code>POST /api/components/add</code> - Add a new component</li>
+                                <li><code>POST /api/vendors/add</code> - Add a new vendor</li>
+                                <li><code>POST /api/types/add</code> - Add a new type</li>
+                            </ul>
+                        </div>
+                    </main>
+                </div>
+            `;
+
+            // API functions
+            window.showComponents = async function() {
+                const content = document.getElementById('content');
+                content.innerHTML = '<h2>Components</h2><p>Loading...</p>';
+
+                try {
+                    const response = await fetch('/api/components/');
+                    const data = await response.json();
+
+                    let html = '<h2>Components (' + data.length + ')</h2>';
+                    if (data.length === 0) {
+                        html += '<p>No components found. Add some components using the API.</p>';
+                    } else {
+                        html += '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;">';
+                        html += '<thead><tr style="background: #e0e0e0;"><th style="padding: 10px; border: 1px solid #ccc;">ID</th><th style="padding: 10px; border: 1px solid #ccc;">Value</th><th style="padding: 10px; border: 1px solid #ccc;">Quantity</th><th style="padding: 10px; border: 1px solid #ccc;">Description</th></tr></thead><tbody>';
+                        data.forEach(component => {
+                            html += `<tr><td style="padding: 8px; border: 1px solid #ccc;">${component.id}</td><td style="padding: 8px; border: 1px solid #ccc;">${component.value}</td><td style="padding: 8px; border: 1px solid #ccc;">${component.quantity}</td><td style="padding: 8px; border: 1px solid #ccc;">${component.description || 'N/A'}</td></tr>`;
+                        });
+                        html += '</tbody></table></div>';
+                    }
+                    content.innerHTML = html;
+                } catch (error) {
+                    content.innerHTML = '<h2>Components</h2><p style="color: red;">Error loading components: ' + error.message + '</p>';
+                }
+            };
+
+            window.showVendors = async function() {
+                const content = document.getElementById('content');
+                content.innerHTML = '<h2>Vendors</h2><p>Loading...</p>';
+
+                try {
+                    const response = await fetch('/api/vendors/');
+                    const data = await response.json();
+
+                    let html = '<h2>Vendors (' + data.length + ')</h2>';
+                    if (data.length === 0) {
+                        html += '<p>No vendors found. Add some vendors using the API.</p>';
+                    } else {
+                        html += '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;">';
+                        html += '<thead><tr style="background: #e0e0e0;"><th style="padding: 10px; border: 1px solid #ccc;">ID</th><th style="padding: 10px; border: 1px solid #ccc;">Name</th><th style="padding: 10px; border: 1px solid #ccc;">Description</th><th style="padding: 10px; border: 1px solid #ccc;">URL</th></tr></thead><tbody>';
+                        data.forEach(vendor => {
+                            html += `<tr><td style="padding: 8px; border: 1px solid #ccc;">${vendor.id}</td><td style="padding: 8px; border: 1px solid #ccc;">${vendor.name}</td><td style="padding: 8px; border: 1px solid #ccc;">${vendor.description || 'N/A'}</td><td style="padding: 8px; border: 1px solid #ccc;"><a href="${vendor.url}" target="_blank">${vendor.url}</a></td></tr>`;
+                        });
+                        html += '</tbody></table></div>';
+                    }
+                    content.innerHTML = html;
+                } catch (error) {
+                    content.innerHTML = '<h2>Vendors</h2><p style="color: red;">Error loading vendors: ' + error.message + '</p>';
+                }
+            };
+
+            window.showTypes = async function() {
+                const content = document.getElementById('content');
+                content.innerHTML = '<h2>Types</h2><p>Loading...</p>';
+
+                try {
+                    const response = await fetch('/api/types/');
+                    const data = await response.json();
+
+                    let html = '<h2>Types (' + data.length + ')</h2>';
+                    if (data.length === 0) {
+                        html += '<p>No types found. Add some types using the API.</p>';
+                    } else {
+                        html += '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;">';
+                        html += '<thead><tr style="background: #e0e0e0;"><th style="padding: 10px; border: 1px solid #ccc;">ID</th><th style="padding: 10px; border: 1px solid #ccc;">Name</th><th style="padding: 10px; border: 1px solid #ccc;">Description</th><th style="padding: 10px; border: 1px solid #ccc;">Unit</th></tr></thead><tbody>';
+                        data.forEach(type => {
+                            html += `<tr><td style="padding: 8px; border: 1px solid #ccc;">${type.id}</td><td style="padding: 8px; border: 1px solid #ccc;">${type.name}</td><td style="padding: 8px; border: 1px solid #ccc;">${type.description || 'N/A'}</td><td style="padding: 8px; border: 1px solid #ccc;">${type.unit || 'N/A'}</td></tr>`;
+                        });
+                        html += '</tbody></table></div>';
+                    }
+                    content.innerHTML = html;
+                } catch (error) {
+                    content.innerHTML = '<h2>Types</h2><p style="color: red;">Error loading types: ' + error.message + '</p>';
+                }
+            };
+
+            window.testApi = async function() {
+                const content = document.getElementById('content');
+                content.innerHTML = '<h2>API Test</h2><p>Testing API connection...</p>';
+
+                try {
+                    const response = await fetch('/api/test');
+                    const text = await response.text();
+                    content.innerHTML = '<h2>API Test</h2><div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; border: 1px solid #c3e6cb;"><strong>✓ Success!</strong><br>API Response: ' + text + '</div>';
+                } catch (error) {
+                    content.innerHTML = '<h2>API Test</h2><div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; border: 1px solid #f5c6cb;"><strong>✗ Error!</strong><br>' + error.message + '</div>';
+                }
+            };
+        })();
+    </script>
+</body>
+</html>
+EOF
+
+# Set proper ownership
+RUN chown -R appuser:appgroup /app
+
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
+
+# Switch to non-root user
+USER appuser
+
+# Expose port 8080 only
+EXPOSE 8080
+
+# Run the backend application
+CMD ["./zig_api_test"]

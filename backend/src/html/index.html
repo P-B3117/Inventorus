@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Zig API Test Interface</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+                color: #333;
+                text-align: center;
+                border-bottom: 3px solid #007acc;
+                padding-bottom: 10px;
+            }
+            h2 {
+                color: #007acc;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 5px;
+            }
+            .endpoint {
+                margin-bottom: 30px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 15px;
+                background-color: #fafafa;
+            }
+            .endpoint-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            .method {
+                background: #28a745;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            .url {
+                font-family: monospace;
+                background: #e9ecef;
+                padding: 4px 8px;
+                border-radius: 4px;
+                flex-grow: 1;
+                margin: 0 10px;
+            }
+            button {
+                background: #007acc;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            button:hover {
+                background: #005fa3;
+            }
+            button:disabled {
+                background: #6c757d;
+                cursor: not-allowed;
+            }
+            .input-group {
+                margin: 10px 0;
+            }
+            label {
+                display: inline-block;
+                width: 100px;
+                font-weight: bold;
+            }
+            input[type="number"] {
+                padding: 5px;
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                width: 100px;
+            }
+            .response {
+                margin-top: 15px;
+                padding: 10px;
+                background: #f8f9fa;
+                border-radius: 4px;
+                border-left: 4px solid #007acc;
+                min-height: 20px;
+            }
+            .response.success {
+                border-left-color: #28a745;
+                background-color: #d4edda;
+            }
+            .response.error {
+                border-left-color: #dc3545;
+                background-color: #f8d7da;
+            }
+            .status {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .status.success {
+                color: #28a745;
+            }
+            .status.error {
+                color: #dc3545;
+            }
+            pre {
+                background: #f1f3f4;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+            .loading {
+                color: #007acc;
+                font-style: italic;
+            }
+            .server-status {
+                text-align: center;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                font-weight: bold;
+            }
+            .server-online {
+                background-color: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+            .server-offline {
+                background-color: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+            .test-all {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .test-all button {
+                background: #fd7e14;
+                font-size: 16px;
+                padding: 12px 24px;
+            }
+            .test-all button:hover {
+                background: #e8590c;
+            }
+            .form-group {
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+            }
+            .form-group label {
+                width: 150px;
+                font-weight: bold;
+            }
+            .form-group input,
+            .form-group textarea {
+                flex: 1;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-family: Arial, sans-serif;
+            }
+            .form-group textarea {
+                resize: vertical;
+                min-height: 60px;
+            }
+            .method.post {
+                background: #007bff;
+            }
+            .add-component-form {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin: 10px 0;
+                border: 1px solid #dee2e6;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🦎 Zig API Test Interface</h1>
+
+        <div class="container">
+            <div id="server-status" class="server-status">
+                <span id="status-text">Checking server status...</span>
+            </div>
+
+            <div class="test-all">
+                <button id="test-all-btn" onclick="testAllEndpoints()">
+                    🚀 Test All Endpoints
+                </button>
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>API Endpoints</h2>
+
+            <!-- Get All Components -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url">http://localhost:8080/components/</span>
+                    <button
+                        onclick="testEndpoint('/components/', 'components-all-response')"
+                    >
+                        Test
+                    </button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get all components from the
+                    database
+                </p>
+                <div id="components-all-response" class="response"></div>
+            </div>
+
+            <!-- Get Component by ID -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url"
+                        >http://localhost:8080/components/:id</span
+                    >
+                    <button onclick="testComponentById()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get a specific component by
+                    its ID
+                </p>
+                <div class="input-group">
+                    <label for="component-id">Component ID:</label>
+                    <input
+                        type="number"
+                        id="component-id"
+                        value="1"
+                        min="1"
+                        max="1000"
+                    />
+                </div>
+                <div id="component-by-id-response" class="response"></div>
+            </div>
+
+            <!-- Add Component -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="url"
+                        >http://localhost:8080/components/add</span
+                    >
+                    <button onclick="testAddComponent()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Add a new component to the
+                    database
+                </p>
+                <p>
+                    <em>Note:</em> The ID is automatically generated using a
+                    timestamp to ensure uniqueness during testing.
+                </p>
+                <div class="add-component-form">
+                    <div class="form-group">
+                        <label for="add-type-id">Type ID:</label>
+                        <input
+                            type="number"
+                            id="add-type-id"
+                            value="1"
+                            min="1"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-value">Value:</label>
+                        <input
+                            type="text"
+                            id="add-value"
+                            value="22kΩ"
+                            placeholder="Component value"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-quantity">Quantity:</label>
+                        <input
+                            type="number"
+                            id="add-quantity"
+                            value="250"
+                            min="0"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-footprint">Footprint:</label>
+                        <input
+                            type="text"
+                            id="add-footprint"
+                            value="0805"
+                            placeholder="Component footprint"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-vendor-id">Vendor ID:</label>
+                        <input
+                            type="number"
+                            id="add-vendor-id"
+                            value="2"
+                            min="1"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-description">Description:</label>
+                        <textarea
+                            id="add-description"
+                            placeholder="Component description"
+                        >
+Surface mount resistor 22kΩ ±5% for testing</textarea
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="add-vendor-part">Vendor Part Number:</label>
+                        <input
+                            type="text"
+                            id="add-vendor-part"
+                            value="RC0805JR-0722KL"
+                            placeholder="Vendor part number"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-price">Price (cents):</label>
+                        <input
+                            type="number"
+                            id="add-price"
+                            value="3"
+                            min="0"
+                            placeholder="Price in cents (e.g., 99 for $0.99)"
+                        />
+                    </div>
+                </div>
+                <div id="add-component-response" class="response"></div>
+            </div>
+
+            <!-- Add Many Components -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="url"
+                        >http://localhost:8080/components/add/many</span
+                    >
+                    <button onclick="testAddManyComponents()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Add multiple components to the
+                    database in a single transaction
+                </p>
+                <p>
+                    <em>Note:</em> This endpoint accepts an array of components
+                    and uses database transactions for efficiency.
+                </p>
+                <div class="add-many-components-form">
+                    <div class="form-group">
+                        <label for="components-count"
+                            >Number of Components:</label
+                        >
+                        <input
+                            type="number"
+                            id="components-count"
+                            value="3"
+                            min="1"
+                            max="10"
+                            onchange="generateComponentsForm()"
+                        />
+                    </div>
+                    <div id="components-forms-container">
+                        <!-- Dynamic forms will be generated here -->
+                    </div>
+                    <button
+                        onclick="generateComponentsForm()"
+                        style="
+                            margin: 10px 0;
+                            padding: 5px 10px;
+                            background: #007acc;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                        "
+                    >
+                        Generate Forms
+                    </button>
+                </div>
+                <div id="add-many-components-response" class="response"></div>
+            </div>
+
+            <!-- Get All Vendors -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url">http://localhost:8080/vendors/</span>
+                    <button
+                        onclick="testEndpoint('/vendors/', 'vendors-all-response')"
+                    >
+                        Test
+                    </button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get all vendors from the
+                    database
+                </p>
+                <div id="vendors-all-response" class="response"></div>
+            </div>
+
+            <!-- Get Vendor by ID -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url">http://localhost:8080/vendors/:id</span>
+                    <button onclick="testVendorById()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get a specific vendor by its
+                    ID
+                </p>
+                <div class="input-group">
+                    <label for="vendor-id">Vendor ID:</label>
+                    <input
+                        type="number"
+                        id="vendor-id"
+                        value="1"
+                        min="1"
+                        max="1000"
+                    />
+                </div>
+                <div id="vendor-by-id-response" class="response"></div>
+            </div>
+
+            <!-- Add Vendor -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="url">http://localhost:8080/vendors/add</span>
+                    <button onclick="testAddVendor()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Add a new vendor to the
+                    database
+                </p>
+                <div class="add-vendor-form">
+                    <div class="form-group">
+                        <label for="add-vendor-name">Name:</label>
+                        <input
+                            type="text"
+                            id="add-vendor-name"
+                            value="Test Vendor"
+                            placeholder="Vendor name"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-vendor-description">Description:</label>
+                        <textarea
+                            id="add-vendor-description"
+                            placeholder="Vendor description"
+                        >
+Electronic components supplier for testing</textarea
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="add-vendor-url">URL:</label>
+                        <input
+                            type="text"
+                            id="add-vendor-url"
+                            value="https://example.com"
+                            placeholder="Vendor website URL"
+                        />
+                    </div>
+                </div>
+                <div id="add-vendor-response" class="response"></div>
+            </div>
+
+            <!-- Get All Types -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url">http://localhost:8080/types/</span>
+                    <button
+                        onclick="testEndpoint('/types/', 'types-all-response')"
+                    >
+                        Test
+                    </button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get all types from the
+                    database
+                </p>
+                <div id="types-all-response" class="response"></div>
+            </div>
+
+            <!-- Get Type by ID -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="url">http://localhost:8080/types/:id</span>
+                    <button onclick="testTypeById()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Get a specific type by its ID
+                </p>
+                <div class="input-group">
+                    <label for="type-id">Type ID:</label>
+                    <input
+                        type="number"
+                        id="type-id"
+                        value="1"
+                        min="1"
+                        max="1000"
+                    />
+                </div>
+                <div id="type-by-id-response" class="response"></div>
+            </div>
+
+            <!-- Add Type -->
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="url">http://localhost:8080/types/add</span>
+                    <button onclick="testAddType()">Test</button>
+                </div>
+                <p>
+                    <strong>Description:</strong> Add a new type to the database
+                </p>
+                <div class="add-type-form">
+                    <div class="form-group">
+                        <label for="add-type-name">Name:</label>
+                        <input
+                            type="text"
+                            id="add-type-name"
+                            value="Test Type"
+                            placeholder="Type name"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="add-type-description">Description:</label>
+                        <textarea
+                            id="add-type-description"
+                            placeholder="Type description"
+                        >
+Electronic component type for testing</textarea
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="add-type-unit">Unit:</label>
+                        <input
+                            type="text"
+                            id="add-type-unit"
+                            value="Ω"
+                            placeholder="Unit (e.g., Ω, F, H, V)"
+                        />
+                    </div>
+                </div>
+                <div id="add-type-response" class="response"></div>
+            </div>
+        </div>
+
+        <div class="container">
+            <h2>Data Structures</h2>
+
+            <h3>Component Data Structure</h3>
+            <p>
+                The Components endpoint returns objects with the following
+                structure:
+            </p>
+            <pre>
+{
+  "id": 1,
+  "type_id": 1,
+  "value": "component_value",
+  "quantity": 100,
+  "footprint": "component_footprint",
+  "vendor_id": 1,
+  "description": "Component description",
+  "vendor_part_number": "VPN123",
+  "price": 999
+}
+}</pre
+            >
+
+            <h3>Vendor Data Structure</h3>
+            <p>
+                The Vendors endpoint returns objects with the following
+                structure:
+            </p>
+            <pre>
+{
+  "id": 1,
+  "name": "vendor_name",
+  "description": "Vendor description",
+  "url": "https://vendor.com"
+}</pre
+            >
+
+            <h3>Type Data Structure</h3>
+            <p>
+                The Types endpoint returns objects with the following structure:
+            </p>
+            <pre>
+{
+  "id": 1,
+  "name": "type_name",
+  "description": "Type description",
+  "unit": "Ω"
+}
+}</pre
+            >
+        </div>
+
+        <script>
+            const BASE_URL = "http://localhost:8080";
+
+            // Check server status on load
+            window.onload = function () {
+                checkServerStatus();
+            };
+
+            async function checkServerStatus() {
+                const statusDiv = document.getElementById("server-status");
+                const statusText = document.getElementById("status-text");
+
+                try {
+                    const response = await fetch(`${BASE_URL}/components/`);
+                    if (response.ok) {
+                        statusDiv.className = "server-status server-online";
+                        statusText.textContent =
+                            "✅ Server is online and responding";
+                    } else {
+                        throw new Error("Server responded with error");
+                    }
+                } catch (error) {
+                    statusDiv.className = "server-status server-offline";
+                    statusText.textContent =
+                        "❌ Server is offline or not responding";
+                }
+            }
+
+            async function testEndpoint(endpoint, responseElementId) {
+                const responseDiv = document.getElementById(responseElementId);
+                responseDiv.innerHTML =
+                    '<div class="loading">🔄 Loading...</div>';
+
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${BASE_URL}${endpoint}`);
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    let responseText;
+                    const contentType = response.headers.get("content-type");
+
+                    if (
+                        contentType &&
+                        contentType.includes("application/json")
+                    ) {
+                        const jsonData = await response.json();
+                        responseText = JSON.stringify(jsonData, null, 2);
+                    } else {
+                        responseText = await response.text();
+                    }
+
+                    if (response.ok) {
+                        responseDiv.className = "response success";
+                        responseDiv.innerHTML = `
+                        <div class="status success">✅ Success (${response.status}) - ${responseTime}ms</div>
+                        <pre>${responseText}</pre>
+                    `;
+                    } else {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                        <div class="status error">❌ Error (${response.status}) - ${responseTime}ms</div>
+                        <pre>${responseText}</pre>
+                    `;
+                    }
+                } catch (error) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                    <div class="status error">❌ Network Error</div>
+                    <pre>${error.message}</pre>
+                `;
+                }
+            }
+
+            async function testComponentById() {
+                const componentId =
+                    document.getElementById("component-id").value;
+                if (!componentId) {
+                    alert("Please enter a component ID");
+                    return;
+                }
+
+                const endpoint = `/components/${componentId}`;
+                await testEndpoint(endpoint, "component-by-id-response");
+            }
+
+            async function testVendorById() {
+                const vendorId = document.getElementById("vendor-id").value;
+                if (!vendorId) {
+                    alert("Please enter a vendor ID");
+                    return;
+                }
+
+                const endpoint = `/vendors/${vendorId}`;
+                await testEndpoint(endpoint, "vendor-by-id-response");
+            }
+
+            async function testTypeById() {
+                const typeId = document.getElementById("type-id").value;
+                if (!typeId) {
+                    alert("Please enter a type ID");
+                    return;
+                }
+
+                const endpoint = `/types/${typeId}`;
+                await testEndpoint(endpoint, "type-by-id-response");
+            }
+
+            async function testAddVendor() {
+                const responseDiv = document.getElementById(
+                    "add-vendor-response",
+                );
+                responseDiv.innerHTML =
+                    '<div class="loading">🔄 Loading...</div>';
+
+                // Collect form data
+                const vendorData = {
+                    name: document.getElementById("add-vendor-name").value,
+                    description: document.getElementById(
+                        "add-vendor-description",
+                    ).value,
+                    url: document.getElementById("add-vendor-url").value,
+                };
+
+                // Validate required fields
+                if (!vendorData.name || !vendorData.url) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Validation Error</div>
+                        <pre>Name and URL are required</pre>
+                    `;
+                    return;
+                }
+
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${BASE_URL}/vendors/add`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(vendorData),
+                    });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    let responseText;
+                    const contentType = response.headers.get("content-type");
+
+                    if (
+                        contentType &&
+                        contentType.includes("application/json")
+                    ) {
+                        const jsonData = await response.json();
+                        responseText = JSON.stringify(jsonData, null, 2);
+                    } else {
+                        responseText = await response.text();
+                    }
+
+                    if (response.ok) {
+                        responseDiv.className = "response success";
+                        responseDiv.innerHTML = `
+                            <div class="status success">✅ Success (${response.status}) - ${responseTime}ms</div>
+                            <pre>Vendor added successfully!${responseText ? "\n" + responseText : ""}</pre>
+                        `;
+                    } else {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                            <div class="status error">❌ Error (${response.status}) - ${responseTime}ms</div>
+                            <pre>${responseText}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Network Error</div>
+                        <pre>${error.message}</pre>
+                    `;
+                }
+            }
+
+            async function testAddType() {
+                const responseDiv =
+                    document.getElementById("add-type-response");
+                responseDiv.innerHTML =
+                    '<div class="loading">🔄 Loading...</div>';
+
+                // Collect form data
+                const typeData = {
+                    name: document.getElementById("add-type-name").value,
+                    description: document.getElementById("add-type-description")
+                        .value,
+                    unit: document.getElementById("add-type-unit").value,
+                };
+
+                // Validate required fields
+                if (!typeData.name) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Validation Error</div>
+                        <pre>Name is required</pre>
+                    `;
+                    return;
+                }
+
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${BASE_URL}/types/add`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(typeData),
+                    });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    let responseText;
+                    const contentType = response.headers.get("content-type");
+
+                    if (
+                        contentType &&
+                        contentType.includes("application/json")
+                    ) {
+                        const jsonData = await response.json();
+                        responseText = JSON.stringify(jsonData, null, 2);
+                    } else {
+                        responseText = await response.text();
+                    }
+
+                    if (response.ok) {
+                        responseDiv.className = "response success";
+                        responseDiv.innerHTML = `
+                            <div class="status success">✅ Success (${response.status}) - ${responseTime}ms</div>
+                            <pre>Type added successfully!${responseText ? "\n" + responseText : ""}</pre>
+                        `;
+                    } else {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                            <div class="status error">❌ Error (${response.status}) - ${responseTime}ms</div>
+                            <pre>${responseText}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Network Error</div>
+                        <pre>${error.message}</pre>
+                    `;
+                }
+            }
+
+            function generateComponentsForm() {
+                const count = parseInt(
+                    document.getElementById("components-count").value,
+                );
+                const container = document.getElementById(
+                    "components-forms-container",
+                );
+
+                container.innerHTML = "";
+
+                for (let i = 0; i < count; i++) {
+                    const formDiv = document.createElement("div");
+                    formDiv.className = "component-form";
+                    formDiv.style.cssText =
+                        "border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; background: #fafafa;";
+
+                    formDiv.innerHTML = `
+                        <h4>Component ${i + 1}</h4>
+                        <div class="form-group">
+                            <label>Type ID:</label>
+                            <input type="number" class="comp-type-id" value="${i + 1}" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label>Value:</label>
+                            <input type="text" class="comp-value" value="${["10kΩ", "22kΩ", "47kΩ"][i % 3]}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity:</label>
+                            <input type="number" class="comp-quantity" value="${100 * (i + 1)}" min="0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Footprint:</label>
+                            <input type="text" class="comp-footprint" value="0805" />
+                        </div>
+                        <div class="form-group">
+                            <label>Vendor ID:</label>
+                            <input type="number" class="comp-vendor-id" value="1" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label>Description:</label>
+                            <textarea class="comp-description">Test component ${i + 1} for batch testing</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Vendor Part:</label>
+                            <input type="text" class="comp-vendor-part" value="TEST-${String(i + 1).padStart(3, "0")}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Price:</label>
+                            <input type="number" class="comp-price" value="${i + 1}" min="0" />
+                        </div>
+                    `;
+
+                    container.appendChild(formDiv);
+                }
+            }
+
+            async function testAddManyComponents() {
+                const responseDiv = document.getElementById(
+                    "add-many-components-response",
+                );
+                responseDiv.innerHTML =
+                    '<div class="loading">🔄 Loading...</div>';
+
+                // Collect data from all component forms
+                const componentForms =
+                    document.querySelectorAll(".component-form");
+                const componentsData = [];
+
+                for (let form of componentForms) {
+                    const componentData = {
+                        type_id: parseInt(
+                            form.querySelector(".comp-type-id").value,
+                        ),
+                        value: form.querySelector(".comp-value").value,
+                        quantity: parseInt(
+                            form.querySelector(".comp-quantity").value,
+                        ),
+                        footprint: form.querySelector(".comp-footprint").value,
+                        vendor_id: parseInt(
+                            form.querySelector(".comp-vendor-id").value,
+                        ),
+                        description:
+                            form.querySelector(".comp-description").value,
+                        vendor_part_number:
+                            form.querySelector(".comp-vendor-part").value,
+                        price: parseInt(
+                            form.querySelector(".comp-price").value,
+                        ),
+                    };
+
+                    // Validate required fields for each component
+                    if (
+                        !componentData.type_id ||
+                        !componentData.value ||
+                        !componentData.vendor_id
+                    ) {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                            <div class="status error">❌ Validation Error</div>
+                            <pre>All components must have Type ID, Value, and Vendor ID</pre>
+                        `;
+                        return;
+                    }
+
+                    componentsData.push(componentData);
+                }
+
+                if (componentsData.length === 0) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ No Components</div>
+                        <pre>Please generate component forms first</pre>
+                    `;
+                    return;
+                }
+
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(
+                        `${BASE_URL}/components/add/many`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(componentsData),
+                        },
+                    );
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    let responseText;
+                    const contentType = response.headers.get("content-type");
+
+                    if (
+                        contentType &&
+                        contentType.includes("application/json")
+                    ) {
+                        const jsonData = await response.json();
+                        responseText = JSON.stringify(jsonData, null, 2);
+                    } else {
+                        responseText = await response.text();
+                    }
+
+                    if (response.ok) {
+                        responseDiv.className = "response success";
+                        responseDiv.innerHTML = `
+                            <div class="status success">✅ Success (${response.status}) - ${responseTime}ms</div>
+                            <pre>${componentsData.length} components added successfully!${responseText ? "\n" + responseText : ""}</pre>
+                        `;
+                    } else {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                            <div class="status error">❌ Error (${response.status}) - ${responseTime}ms</div>
+                            <pre>${responseText}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Network Error</div>
+                        <pre>${error.message}</pre>
+                    `;
+                }
+            }
+
+            async function testAddComponent() {
+                const responseDiv = document.getElementById(
+                    "add-component-response",
+                );
+                responseDiv.innerHTML =
+                    '<div class="loading">🔄 Loading...</div>';
+
+                // Collect form data
+                const componentData = {
+                    id: Date.now(), // Use timestamp as unique ID to avoid conflicts
+                    type_id: parseInt(
+                        document.getElementById("add-type-id").value,
+                    ),
+                    value: document.getElementById("add-value").value,
+                    quantity: parseInt(
+                        document.getElementById("add-quantity").value,
+                    ),
+                    footprint: document.getElementById("add-footprint").value,
+                    vendor_id: parseInt(
+                        document.getElementById("add-vendor-id").value,
+                    ),
+                    description:
+                        document.getElementById("add-description").value,
+                    vendor_part_number:
+                        document.getElementById("add-vendor-part").value,
+                    price: parseInt(document.getElementById("add-price").value),
+                };
+
+                // Validate required fields
+                if (
+                    !componentData.type_id ||
+                    !componentData.value ||
+                    !componentData.vendor_id
+                ) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Validation Error</div>
+                        <pre>Type ID, Value, and Vendor ID are required</pre>
+                    `;
+                    return;
+                }
+
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${BASE_URL}/components/add`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(componentData),
+                    });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    let responseText;
+                    const contentType = response.headers.get("content-type");
+
+                    if (
+                        contentType &&
+                        contentType.includes("application/json")
+                    ) {
+                        const jsonData = await response.json();
+                        responseText = JSON.stringify(jsonData, null, 2);
+                    } else {
+                        responseText = await response.text();
+                    }
+
+                    if (response.ok) {
+                        responseDiv.className = "response success";
+                        responseDiv.innerHTML = `
+                            <div class="status success">✅ Success (${response.status}) - ${responseTime}ms</div>
+                            <pre>Component added successfully!${responseText ? "\n" + responseText : ""}</pre>
+                        `;
+                    } else {
+                        responseDiv.className = "response error";
+                        responseDiv.innerHTML = `
+                            <div class="status error">❌ Error (${response.status}) - ${responseTime}ms</div>
+                            <pre>${responseText}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    responseDiv.className = "response error";
+                    responseDiv.innerHTML = `
+                        <div class="status error">❌ Network Error</div>
+                        <pre>${error.message}</pre>
+                    `;
+                }
+            }
+
+            async function testAllEndpoints() {
+                const testAllBtn = document.getElementById("test-all-btn");
+                testAllBtn.disabled = true;
+                testAllBtn.textContent = "🔄 Testing...";
+
+                // Test all endpoints in sequence
+
+                await testEndpoint("/components/", "components-all-response");
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testComponentById();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testAddComponent();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testAddManyComponents();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testEndpoint("/vendors/", "vendors-all-response");
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testVendorById();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testAddVendor();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testEndpoint("/types/", "types-all-response");
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testTypeById();
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                await testAddType();
+
+                testAllBtn.disabled = false;
+                testAllBtn.textContent = "🚀 Test All Endpoints";
+
+                // Re-check server status
+                await checkServerStatus();
+            }
+
+            // Auto-refresh server status every 30 seconds
+            setInterval(checkServerStatus, 30000);
+        </script>
+        <script>
+            // Initialize components form on page load
+            document.addEventListener("DOMContentLoaded", function () {
+                generateComponentsForm();
+            });
+        </script>
+    </body>
+</html>
