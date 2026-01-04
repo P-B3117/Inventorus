@@ -59,6 +59,7 @@ const typErr = res.Types{
 // To be known that specifying the allocator in the function parameters is necessary for memory management
 // as that
 // allocator frees everything after the requests ends. Somehow that doesn't work for the db.
+// TODO delete function
 pub const Api = struct {
     pub fn @"GET /"(response: *tk.Response) !void {
         response.header("Content-Type", "text/html");
@@ -112,6 +113,16 @@ pub const Api = struct {
         // std.debug.print("POST /components/add\n", .{});
 
         _ = try db.insert(res.Components, body);
+    }
+
+    pub fn @"POST /components/delete"(allocator: std.mem.Allocator, body: res.Components) !void {
+        var db = try gb.app.dbPool.getSession(allocator);
+        defer db.deinit();
+
+        const transaction = std.fmt.allocPrint(allocator, "DELETE FROM Components WHERE id = {d}", .{body.id});
+        defer transaction.deinit();
+
+        try db.conn.execAll(transaction);
     }
 
     pub fn @"POST /components/add/many"(allocator: std.mem.Allocator, body: []const res.ComponentsInsert) !void {
@@ -170,6 +181,16 @@ pub const Api = struct {
         _ = try db.insert(res.Vendors, body);
     }
 
+    pub fn @"POST /vendors/delete"(allocator: std.mem.Allocator, body: res.Vendors) !void {
+        var db = try gb.app.dbPool.getSession(allocator);
+        defer db.deinit();
+
+        const transaction = std.fmt.allocPrint(allocator, "DELETE FROM Vendors WHERE id = {d}", .{body.id});
+        defer transaction.deinit();
+
+        try db.conn.execAll(transaction);
+    }
+
     pub fn @"GET /types/:id"(allocator: std.mem.Allocator, id: u32) !res.Types {
         // std.debug.print("type: {}\n", .{id});
 
@@ -210,5 +231,15 @@ pub const Api = struct {
         // std.debug.print("POST /components/add\n", .{});
 
         _ = try db.insert(res.Types, body);
+    }
+
+    pub fn @"POST /types/delete"(allocator: std.mem.Allocator, body: res.Types) !void {
+        var db = try gb.app.dbPool.getSession(allocator);
+        defer db.deinit();
+
+        const transaction = std.fmt.allocPrint(allocator, "DELETE FROM Types WHERE id = {d}", .{body.id});
+        defer transaction.deinit();
+
+        try db.conn.execAll(transaction);
     }
 };
