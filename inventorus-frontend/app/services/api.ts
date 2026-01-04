@@ -1,8 +1,25 @@
 // API configuration and base utilities
 
-// Use proxy in development, direct in production
-const API_BASE_URL =
-  process.env.NODE_ENV === "production" ? "http://localhost:8080/api" : "/api";
+// Dynamically get API URL based on current origin
+// In development with Vite proxy: uses "/api"
+// In production: uses current origin + "/api" (e.g., http://localhost:8080/api)
+function getApiBaseUrl(): string {
+  // If VITE_API_URL is explicitly set, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // Check if we're in a browser environment
+  if (typeof window !== "undefined") {
+    // Use current origin + /api (e.g., http://localhost:8080/api)
+    return `${window.location.origin}/api`;
+  }
+
+  // Fallback for SSR or non-browser environments
+  return "/api";
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export class ApiError extends Error {
   constructor(
@@ -46,8 +63,37 @@ export async function apiRequest<T>(
       return {} as T;
     }
 
-    const data = await response.json();
-    return data;
+    // Get the response text first for better error handling
+    const text = await response.text();
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      console.error("Response is not JSON:", {
+        url,
+        contentType,
+        text: text.substring(0, 200), // First 200 chars for debugging
+      });
+      throw new ApiError(
+        `Expected JSON response but got ${contentType || "unknown content type"}`,
+        response.status,
+      );
+    }
+
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (parseError) {
+      console.error("JSON parse error:", {
+        url,
+        text: text.substring(0, 200), // First 200 chars for debugging
+        error: parseError,
+      });
+      throw new ApiError(
+        `Invalid JSON response: ${parseError instanceof Error ? parseError.message : "Unknown error"}`,
+        response.status,
+      );
+    }
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
