@@ -91,6 +91,7 @@ func (t *TypeHandler) getTypeId(w http.ResponseWriter, r *http.Request) {
 func (t *TypeHandler) createType(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Adding type")
 	sli, err := object_decode(r.Body, &Type{})
+	fmt.Println(sli)
 	if err != nil {
 		fmt.Println("Error decoding type:", err)
 		return

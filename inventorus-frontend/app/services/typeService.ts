@@ -1,12 +1,12 @@
-import { api } from './api';
-import type { Type, TypeInsert } from './types';
+import { api } from "./api";
+import type { Type, TypeInsert } from "./types";
 
 export const typeService = {
   /**
    * Get all types
    */
   async getAllTypes(): Promise<Type[]> {
-    return api.get<Type[]>('/types/');
+    return api.get<Type[]>("/types/");
   },
 
   /**
@@ -20,6 +20,6 @@ export const typeService = {
    * Add a new type
    */
   async addType(type: TypeInsert): Promise<void> {
-    return api.post<void>('/types/add', type);
+    return api.post<void>("/types/create", type);
   },
 };

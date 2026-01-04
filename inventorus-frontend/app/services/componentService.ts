@@ -1,12 +1,12 @@
-import { api } from './api';
-import type { Component, ComponentInsert } from './types';
+import { api } from "./api";
+import type { Component, ComponentInsert } from "./types";
 
 export const componentService = {
   /**
    * Get all components
    */
   async getAllComponents(): Promise<Component[]> {
-    return api.get<Component[]>('/components/');
+    return api.get<Component[]>("/components/");
   },
 
   /**
@@ -20,13 +20,13 @@ export const componentService = {
    * Add a new component
    */
   async addComponent(component: ComponentInsert): Promise<void> {
-    return api.post<void>('/components/add', component);
+    return api.post<void>("/components/create", component);
   },
 
   /**
    * Add multiple components
    */
   async addManyComponents(components: ComponentInsert[]): Promise<void> {
-    return api.post<void>('/components/add/many', components);
+    return api.post<void>("/components/create", components);
   },
 };

@@ -93,7 +93,8 @@ func object_delete(db *sql.DB, obj object) error {
 
 // not thread safe on the same object
 func object_decode(body io.ReadCloser, obj object) ([]object, error) {
-	// 3. Decode the JSON body into the struct
+	fmt.Println("Decoding ", body)
+
 	decoder := json.NewDecoder(body)
 
 	var objs []object
@@ -112,6 +113,7 @@ func object_decode(body io.ReadCloser, obj object) ([]object, error) {
 
 // TODO support batching to optimize bulk inserts. Also maybe have single insert detection
 func object_create(db *sql.DB, objs []object) error {
+	fmt.Println("Creating objects")
 	ctx := context.Background()
 
 	tx, err := db.BeginTx(ctx, nil)
@@ -120,6 +122,7 @@ func object_create(db *sql.DB, objs []object) error {
 	}
 	defer tx.Rollback()
 
+	fmt.Println("Entering creation loop")
 	for _, obj := range objs {
 		query, args := obj.getAddQuery()
 		fmt.Println("Querying with:\n  " + query)

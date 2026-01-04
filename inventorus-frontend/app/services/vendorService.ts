@@ -1,12 +1,12 @@
-import { api } from './api';
-import type { Vendor, VendorInsert } from './types';
+import { api } from "./api";
+import type { Vendor, VendorInsert } from "./types";
 
 export const vendorService = {
   /**
    * Get all vendors
    */
   async getAllVendors(): Promise<Vendor[]> {
-    return api.get<Vendor[]>('/vendors/');
+    return api.get<Vendor[]>("/vendors/");
   },
 
   /**
@@ -20,6 +20,6 @@ export const vendorService = {
    * Add a new vendor
    */
   async addVendor(vendor: VendorInsert): Promise<void> {
-    return api.post<void>('/vendors/add', vendor);
+    return api.post<void>("/vendors/create", vendor);
   },
 };
