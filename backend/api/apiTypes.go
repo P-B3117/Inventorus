@@ -76,6 +76,11 @@ func object_getAll(db *sql.DB, obj object) ([]object, error) {
 		log.Fatal(err)
 	}
 
+	fmt.Println("Got the following objects:")
+	for _, obj := range objects {
+		fmt.Println("  ", obj)
+	}
+
 	return objects, nil
 }
 

@@ -8,10 +8,10 @@ import (
 )
 
 type Vendor struct {
-	Id          uint32 `json:"Id"`
-	Url         string `json:"Url"`
-	Description string `json:"Description"`
-	Name        string `json:"Name"`
+	Id          uint32 `json:"id"`
+	Url         string `json:"url"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
 }
 
 func (v *Vendor) new() object {
