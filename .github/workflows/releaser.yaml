@@ -1,0 +1,49 @@
+name: Release Inventorus
+
+on:
+  push:
+    tags:
+      - "v*" # Triggers on tags like v1.0.0, v1.1.0, etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # You can change this to 18 or 22 if needed
+          cache: "npm"
+          cache-dependency-path: inventorus-frontend/package-lock.json
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build Frontend
+        run: |
+          cd inventorus-frontend
+          npm install
+          npm run build
+          # Ensure destination exists in backend
+          mkdir -p ../backend/frontend
+          # Use 'cp -a' to preserve directory structure/attributes
+          cp -a build/client/. ../backend/frontend/
+
+      - name: Build Backend (Static Binary)
+        run: |
+          cd backend
+          # CGO_ENABLED=1 is required for libSQL C-bindings
+          CGO_ENABLED=1 \
+          go build -o ../inventorus .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: inventorus
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
