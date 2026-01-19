@@ -1,5 +1,6 @@
 *cache
-backend/frontend
-backend/inventorus
+inventorus-backend/frontend
+inventorus-backend/inventorus
+inventorus-backend/c3i
 test.db
 output/
