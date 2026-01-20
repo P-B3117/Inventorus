@@ -83,6 +83,13 @@ func (h *homeHandler) InitializeTargets() error {
 	return nil
 }
 
+func (h *homeHandler) initFS(fsys embed.FS) {
+	dist, _ := fs.Sub(fsys, "frontend")
+	fileServer := http.FileServer(http.FS(dist))
+	h.Fsys = dist
+	h.Fser = fileServer
+}
+
 func serve() {
 	var cfg Config
 
@@ -104,19 +111,16 @@ func serve() {
 	// http multiplexer
 	mux := http.NewServeMux()
 
-	dist, _ := fs.Sub(frontendBuild, "frontend")
-	fileServer := http.FileServer(http.FS(dist))
-
 	handler := &homeHandler{
 		_targets: []target{
 			{tag: "vendors", init: &api.VendorHandler{}}, // just create functions that takes the homehandler mux and that calls the handleFunc on each path. create an interface for that?
 			{tag: "types", init: &api.TypeHandler{}},
 			{tag: "components", init: &api.ComponentHandler{}},
 		},
-		mux:  mux,
-		Fsys: dist,
-		Fser: fileServer,
+		mux: mux,
 	}
+
+	handler.initFS(frontendBuild)
 
 	// TODO make a add function to homehandler so if we add the vendors struct, it adds it to the paths slice
 	// Register the routes and handlers

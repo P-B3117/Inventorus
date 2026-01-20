@@ -40,14 +40,22 @@ func (c *Component) fromCsv(row []string) error {
 	if len(row) != 8 {
 		return errors.New("invalid csv length")
 	}
-	c.Type_id, _ = strconv.Atoi(csv[0])
-	c.Value = csv[1]
-	c.Quantity, _ = strconv.Atoi(csv[2])
-	c.Footprint = csv[3]
-	c.Vendor_id, _ = strconv.Atoi(csv[4])
-	c.Description = csv[5]
-	c.Vendor_part_number = csv[6]
-	c.Price, _ = strconv.Atoi(csv[7])
+
+	// because go somehow ain't got string to uint32 conversion
+	var temp uint64
+	temp, _ = strconv.ParseUint(row[0], 10, 32)
+	c.Type_id = uint32(temp)
+	c.Value = row[1]
+	temp, _ = strconv.ParseUint(row[2], 10, 32)
+	c.Quantity = uint32(temp)
+	c.Footprint = row[3]
+	temp, _ = strconv.ParseUint(row[4], 10, 32)
+	c.Vendor_id = uint32(temp)
+	c.Description = row[5]
+	c.Vendor_part_number = row[6]
+	temp, _ = strconv.ParseUint(row[7], 10, 32)
+	c.Price = uint16(temp)
+
 	return nil
 }
 

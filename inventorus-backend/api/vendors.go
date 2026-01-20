@@ -2,8 +2,10 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -34,6 +36,22 @@ func (v *Vendor) getAddQuery() (string, []any) {
 	query := fmt.Sprintf("INSERT INTO %s (url, description, name) VALUES (?, ?, ?)", v.getTable())
 	args := []any{v.Url, v.Description, strings.ToLower(v.Name)}
 	return query, args
+}
+
+func (v *Vendor) fromCsv(row []string) error {
+	if len(row) != 4 {
+		return errors.New("invalid csv length")
+	}
+
+	// because go somehow ain't got string to uint32 conversion
+	var temp uint64
+	temp, _ = strconv.ParseUint(row[0], 10, 32)
+	v.Id = uint32(temp)
+	v.Url = row[1]
+	v.Description = row[2]
+	v.Name = row[3]
+
+	return nil
 }
 
 type VendorHandler struct {
